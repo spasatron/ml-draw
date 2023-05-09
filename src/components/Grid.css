@@ -1,0 +1,32 @@
+/* Grid Wrapper */
+
+.grid-wrapper {
+    display: flex;
+    justify-content: center; /* Horizontally center the content */
+    align-items: center; /* Vertically center the content */
+    height: 100vh; /* Set the height of the container to full viewport height */
+}
+
+/* Grid container */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(64, 8px); /* Adjust the number of columns as needed */
+    gap: 2px;
+}
+
+.grid-column {
+    display: grid;
+    gap: 2px;
+}
+
+/* Grid cell */
+.grid-cell {
+    width: 8px;
+    height: 8px;
+    background-color: rgb(73, 77, 82);;
+}
+
+/* Active cell */
+.active-cell {
+    background-color: rgb(160, 168, 177);; /* Adjust the background color for active cells as needed */
+}
