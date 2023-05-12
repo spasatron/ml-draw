@@ -6,18 +6,18 @@ function Grid() {
   const [gridState, setGridState] = useState(
     Array.from({ length: 64 }, () => Array(64).fill(false))
   );
-  let brushSize = 10;
+  let brushSize = 2;
   const divRef = useRef<HTMLDivElement>(null);
 
   const [isMouseDown, setIsMouseDown] = useState(false);
 
   const handleMouseDown = () => {
-    console.log("Mouse down event");
+    console.log("Local Mouse Down");
     setIsMouseDown(true);
   };
 
   const handleMouseUp = () => {
-    console.log("Mouse up event");
+    console.log("Local Mouse Up");
     setIsMouseDown(false);
   };
 
@@ -39,24 +39,32 @@ function Grid() {
           Math.floor((clientY - top) / cellHeight) - brushRadius;
         const endGridY = startGridY + brushSize;
 
-        if (
-          startGridX >= 0 &&
-          startGridY >= 0 &&
-          endGridX <= gridState.length &&
-          endGridY <= gridState[0].length
+        const updatedGridState = [...gridState];
+
+        for (
+          let i = Math.max(0, startGridX);
+          i < Math.min(endGridX, gridState.length);
+          i++
         ) {
-          const updatedGridState = [...gridState];
-
-          for (let i = startGridX; i < endGridX; i++) {
-            for (let j = startGridY; j < endGridY; j++) {
-              updatedGridState[i][j] = true;
-            }
+          for (
+            let j = Math.max(0, startGridY);
+            j < Math.min(endGridY, gridState[0].length);
+            j++
+          ) {
+            updatedGridState[i][j] = true;
           }
-
-          setGridState(updatedGridState);
         }
+
+        setGridState(updatedGridState);
       }
     };
+
+    const handleGlobalMouseUp = (event: MouseEvent) => {
+      console.log("Global Mouse Up");
+      setIsMouseDown(false);
+    };
+
+    document.addEventListener("mouseup", handleGlobalMouseUp);
 
     if (divRef.current) {
       divRef.current.addEventListener("mousemove", handleMouseMove);
@@ -66,6 +74,7 @@ function Grid() {
       if (divRef.current) {
         divRef.current.removeEventListener("mousemove", handleMouseMove);
       }
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
     };
   }, [isMouseDown]);
 
