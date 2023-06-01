@@ -6,6 +6,7 @@ from struct import unpack
 import numpy as np
 import cairocffi as cairo
 import tensorflow as tf
+# pylint: disable-next=import-error
 from tensorflow.keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 
@@ -113,10 +114,6 @@ def extract_label_from_filename(filename):
     return label_mapping.get(label, -1)
 
 
-
-
-
-
 def parse_bin_file(filename):
     """ Returns List of TensorFlow Examples from one .bin image file"""
     examples = []
@@ -147,8 +144,8 @@ if __name__ == "__main__":
     )
 
     # Shuffle the dataset - Each bin file contains around 150,000 images with around 35 times
-    shuffled_dataset = dataset.shuffle(buffer_size=150_000*35, reshuffle_each_iteration=True)
-
+    shuffled_dataset = dataset.shuffle(
+        buffer_size=150_000*35, reshuffle_each_iteration=True)
 
     random_sample = shuffled_dataset.take(EPOCH_DATA_SIZE)
 
@@ -183,10 +180,6 @@ if __name__ == "__main__":
         metrics=['accuracy'])
     model.summary()
 
-
-
-
-
     CHECKPOINT_PATH = "./model_{epoch}.h5"
 
     checkpoint_callback = ModelCheckpoint(
@@ -195,8 +188,6 @@ if __name__ == "__main__":
         save_best_only=False,  # Save the model each time, even if not the best
         verbose=1  # Provide a verbose output
     )
-
-
 
     HISTORY = model.fit(
         train_dataset,

@@ -3,3 +3,4 @@ python/binary_images
 python/binary_images/*
 python/*.h5
 python/*.tflite
+node_modules\*

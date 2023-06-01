@@ -32,3 +32,19 @@
 .active-cell {
     background-color: rgb(160, 168, 177);; /* Adjust the background color for active cells as needed */
 }
+
+.prediction-text {
+    color: beige;
+    display: inline-block;
+    align-items: center;
+    width: 638px;
+    text-align: center;
+}
+
+.clear-grid-button {
+    color: black;
+    width: 170px;
+    margin-top: 30px;
+    margin-left: 210px;
+    text-align: center;
+}
