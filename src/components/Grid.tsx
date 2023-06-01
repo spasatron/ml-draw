@@ -79,7 +79,38 @@ function Grid() {
     }
     setGridState(updatedGridState);
   }
+  function rotateN90(a: any[][]) {
+    var temp = new Array(a[0].length); // number of columns
+    var i = 0;
 
+    for (i = 0; i < temp.length; i++) {
+      temp[i] = [];
+    }
+
+    for (i = 0; i < a.length; i++) {
+      for (let j = 0; j < a[0].length; j++) {
+        temp[j][i] = a[i][a[i].length - 1 - j];
+      }
+    }
+
+    return temp;
+  }
+  // Function to rotate a 2D array clockwise
+  function rotateArrayClockwise(array: any[][]): any[][] {
+    const numRows = array.length;
+    const numCols = array[0].length;
+    let rotatedArray = [];
+
+    for (let col = numCols - 1; col >= 0; col--) {
+      let newRow = [];
+      for (let row = 0; row < numRows; row++) {
+        newRow.push(array[row][col]);
+      }
+      rotatedArray.push(newRow);
+    }
+
+    return rotatedArray;
+  }
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (isMouseDown && divRef.current) {
@@ -127,7 +158,9 @@ function Grid() {
         console.log("Model not loaded yet. Please wait...");
         return;
       }
-      const boolArray = gridState; /* your 64x64 boolean array */
+      const boolArray = rotateN90(
+        rotateN90(rotateN90(gridState))
+      ); /* your 64x64 boolean array */
       const uint8Array2D = [];
 
       for (let i = 0; i < 64; i++) {
@@ -138,7 +171,6 @@ function Grid() {
         uint8Array2D.push(row);
       }
       console.log(uint8Array2D);
-
       let tensor = tf
         .tensor2d(uint8Array2D, [64, 64])
         .reshape([1, 64, 64, 1]) as tf.Tensor4D;
