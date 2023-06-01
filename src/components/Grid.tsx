@@ -39,7 +39,7 @@ let model: tf.LayersModel;
 
 async function loadModel() {
   console.log("Loading model...");
-  const modelPath = "/src/draw_model/model.json";
+  const modelPath = "assets/model.json";
   const modelLoad = await tf.loadLayersModel(modelPath);
   model = modelLoad;
   console.log("Model loaded successfully!");
