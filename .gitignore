@@ -1,3 +1,5 @@
 python/sketchrnn_apple.npz
 python/binary_images
 python/binary_images/*
+python/*.h5
+python/*.tflite

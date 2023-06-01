@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import struct
 from struct import unpack
 import numpy as np
@@ -20,6 +20,7 @@ import cairocffi as cairo
 
 
 def unpack_drawing(file_handle):
+    """ Helper function of unpack_drawings"""
     key_id, = unpack('Q', file_handle.read(8))
     country_code, = unpack('2s', file_handle.read(2))
     recognized, = unpack('b', file_handle.read(1))
@@ -43,14 +44,15 @@ def unpack_drawing(file_handle):
 
 
 def unpack_drawings(filename):
-    with open(filename, 'rb') as f:
+    """ Takes in .bin file and returns simplified representation of image in a dictionary"""
+    with open(filename, 'rb') as file_handle:
         while True:
             try:
-                yield unpack_drawing(f)
+                yield unpack_drawing(file_handle)
             except struct.error:
                 break
 
-
+#pylint: disable-next=too-many-arguments, too-many-locals, line-too-long
 def vector_to_raster(vector_images, side=28, line_diameter=16, padding=16, bg_color=(0, 0, 0), fg_color=(1, 1, 1)):
     """
     padding and line_diameter are relative to the original 256x256 image.
@@ -86,6 +88,7 @@ def vector_to_raster(vector_images, side=28, line_diameter=16, padding=16, bg_co
 
         # draw strokes, this is the most cpu-intensive part
         ctx.set_source_rgb(*fg_color)
+        #pylint: disable-next=invalid-name
         for xv, yv in centered:
             ctx.move_to(xv[0], yv[0])
             for x, y in zip(xv, yv):
@@ -98,21 +101,20 @@ def vector_to_raster(vector_images, side=28, line_diameter=16, padding=16, bg_co
 
     return raster_images
 
+if __name__ == '__main__':
 
-data = np.load('sketchrnn_apple.npz', encoding='latin1', allow_pickle=True)
+    for file in os.listdir('./binary_images'):
+        for drawing in unpack_drawings(os.path.join('./binary_images', file)):
+            # do something with the drawing
+            print(drawing['country_code'])
+            # print(drawing['image'])
+            image = drawing['image']
 
+            raster = vector_to_raster([image])
 
-for drawing in unpack_drawings('./binary_images/full_binary_apple.bin'):
-    # do something with the drawing
-    print(drawing['country_code'])
-    print(drawing['image'])
-    image = drawing['image']
+            img = Image.new(mode='L', size=(28, 28))
 
-    raster = vector_to_raster([image])
+            img.putdata(raster[0].flatten())
+            img.save('airplanes.png')
 
-    img = Image.new(mode='L', size=(28, 28))
-
-    img.putdata(raster[0].flatten())
-    img.save('apple.png')
-
-    a = 'stop'
+            a = 'stop'
