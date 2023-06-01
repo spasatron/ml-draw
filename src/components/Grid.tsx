@@ -87,7 +87,8 @@ function Grid() {
           divRef.current.getBoundingClientRect();
         const { clientX, clientY } = event;
         const cellWidth = width / gridState.length;
-        const cellHeight = height / gridState[0].length;
+        //TODO change back to height once all components are rearanged
+        const cellHeight = width / gridState[0].length;
 
         const brushRadius = Math.floor(brushSize / 2);
 
