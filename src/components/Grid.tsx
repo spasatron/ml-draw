@@ -49,13 +49,15 @@ loadModel();
 
 interface GridProps {
   onPredictionChange: (newPrediction: string) => void;
+  gridState: any[][];
+  onGridChange: (newGrid: any[][]) => void;
 }
 
-const Grid: React.FC<GridProps> = ({ onPredictionChange }) => {
-  const [gridState, setGridState] = useState(
-    Array.from({ length: 64 }, () => Array(64).fill(false))
-  );
-
+const Grid: React.FC<GridProps> = ({
+  onPredictionChange,
+  gridState,
+  onGridChange,
+}) => {
   const [predictedLabel, setPredictedLabel] = useState("");
 
   let brushSize = 3;
@@ -74,15 +76,6 @@ const Grid: React.FC<GridProps> = ({ onPredictionChange }) => {
     setIsMouseDown(false);
   };
 
-  function clearGrid() {
-    const updatedGridState = [...gridState];
-    for (let i = 0; i < 64; i++) {
-      for (let j = 0; j < 64; j++) {
-        updatedGridState[i][j] = false;
-      }
-    }
-    setGridState(updatedGridState);
-  }
   function rotateN90(a: any[][]) {
     var temp = new Array(a[0].length); // number of columns
     var i = 0;
@@ -150,7 +143,7 @@ const Grid: React.FC<GridProps> = ({ onPredictionChange }) => {
           }
         }
 
-        setGridState(updatedGridState);
+        onGridChange(updatedGridState);
       }
     };
 
@@ -167,26 +160,35 @@ const Grid: React.FC<GridProps> = ({ onPredictionChange }) => {
       ); /* your 64x64 boolean array */
       const uint8Array2D = [];
 
+      var isNotEmpty = false;
+
       for (let i = 0; i < 64; i++) {
         const row = new Uint8Array(64);
         for (let j = 0; j < 64; j++) {
           row[j] = boolArray[i][j] ? 255 : 0;
+          isNotEmpty = isNotEmpty || boolArray[i][j];
         }
         uint8Array2D.push(row);
       }
-      let tensor = tf
-        .tensor2d(uint8Array2D, [64, 64])
-        .reshape([1, 64, 64, 1]) as tf.Tensor4D;
-      let resizedTensor = tf.image.resizeBilinear(tensor, [28, 28]);
+      if (!isNotEmpty) {
+        setPredictedLabel("");
+        onPredictionChange("");
+      } else {
+        let tensor = tf
+          .tensor2d(uint8Array2D, [64, 64])
+          .reshape([1, 64, 64, 1]) as tf.Tensor4D;
+        let resizedTensor = tf.image.resizeBilinear(tensor, [28, 28]);
 
-      let predictions = model.predict(resizedTensor) as tf.Tensor4D;
-      let probabilities = tf.argMax(tf.softmax(predictions), 1).dataSync()[0];
+        let predictions = model.predict(resizedTensor) as tf.Tensor4D;
+        let probabilities = tf.argMax(tf.softmax(predictions), 1).dataSync()[0];
 
-      console.log(
-        "I think that you are drawing a: " + labelMapping[probabilities]
-      );
-      setPredictedLabel(labelMapping[probabilities]);
-      onPredictionChange(labelMapping[probabilities]);
+        console.log(
+          "I think that you are drawing a: " + labelMapping[probabilities]
+        );
+
+        setPredictedLabel(labelMapping[probabilities]);
+        onPredictionChange(labelMapping[probabilities]);
+      }
       setIsMouseDown(false);
     };
 
