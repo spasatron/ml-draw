@@ -47,7 +47,11 @@ async function loadModel() {
 
 loadModel();
 
-function Grid() {
+interface GridProps {
+  onPredictionChange: (newPrediction: string) => void;
+}
+
+const Grid: React.FC<GridProps> = ({ onPredictionChange }) => {
   const [gridState, setGridState] = useState(
     Array.from({ length: 64 }, () => Array(64).fill(false))
   );
@@ -170,7 +174,6 @@ function Grid() {
         }
         uint8Array2D.push(row);
       }
-      console.log(uint8Array2D);
       let tensor = tf
         .tensor2d(uint8Array2D, [64, 64])
         .reshape([1, 64, 64, 1]) as tf.Tensor4D;
@@ -183,6 +186,7 @@ function Grid() {
         "I think that you are drawing a: " + labelMapping[probabilities]
       );
       setPredictedLabel(labelMapping[probabilities]);
+      onPredictionChange(labelMapping[probabilities]);
       setIsMouseDown(false);
     };
 
@@ -215,14 +219,14 @@ function Grid() {
         </div>
       ))}
 
-      <div className="prediction-text">
+      {/* <div className="prediction-text">
         I think you are drawing a: {predictedLabel}
       </div>
       <button onClick={clearGrid} className="clear-grid-button">
         Reset Drawing
-      </button>
+      </button> */}
     </div>
   );
-}
+};
 
 export default Grid;
