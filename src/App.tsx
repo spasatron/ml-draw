@@ -7,7 +7,7 @@ function App() {
     <div className="main-background">
       <Banner>
         <div>Doodle Detective</div>
-        <img src="doodle_detective.svg" className="logo" />
+        <img src="./assets/doodle_detective.svg" className="logo" />
       </Banner>
 
       <GridWrapper />
@@ -16,10 +16,10 @@ function App() {
         <div className="spas-text">
           Spas Angelov
           <a href="https://www.linkedin.com/in/spas-angelov-58182a1a2/">
-            <img src="linkedin.svg" className="linkedin" />
+            <img src="./assets/linkedin.svg" className="linkedin" />
           </a>
           <a href="https://github.com/spasatron/ml-draw">
-            <img src="github-mark-white.svg" className="github" />
+            <img src="./assets/github-mark-white.svg" className="github" />
           </a>
         </div>
       </Banner>
