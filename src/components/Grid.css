@@ -35,9 +35,9 @@
 }
 .grid-component-wrapper{
     background-color: #00072d;
-    margin-top: 5vh;
     padding: 2vh;
     border-radius: 5px;
+    height:85vh;
 }
 
 .logo{
@@ -56,13 +56,16 @@
 
 
 /* Grid Wrapper */
+body{
+    overflow: hidden;
+}
+
 
 .grid-wrapper {
     display: flex;
     justify-content: center; /* Horizontally center the content */
     align-items: center; /* Vertically center the content */
-    height: 93vh; /* Set the height of the container to full viewport height */
-
+    height: 100vh; /* Set the height of the container to full viewport height */
 }
 
 
@@ -71,22 +74,17 @@
     cursor: crosshair;
     display: grid;
     /*grid-template-columns: repeat(64, 8px); /* Adjust the number of columns as needed */
-    grid-template-columns: repeat(64, 1vh);
-    gap: 2px;
+    /*grid-template-columns: repeat(64, .95vh);*/
     user-select: none;
-}
-
-.grid-column {
-    display: grid;
-    gap: 2px;
 }
 
 /* Grid cell */
 .grid-cell {
-    width: 1vh;
-    height: 1vh;
+    /*width: 100%;
+    aspect-ratio: 1/1;*/
     background-color:#a6e1fa;
     opacity: .2;
+    box-shadow: inset 0px 0px 0px 1px #00072d;
 }
 
 /* Active cell */
@@ -108,7 +106,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: xx-large;
+    font-size: 100%;
     flex: 6;
     height: 100%;
     font-family:Arial, Helvetica, sans-serif;
@@ -118,7 +116,7 @@
 
 .reset-button{
     color: #00072d;
-    font-size: xx-large;
+    font-size: 100%;
     flex: 2;
     font-family:Arial, Helvetica, sans-serif;
     background-color: #d1dde2;

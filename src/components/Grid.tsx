@@ -45,6 +45,19 @@ async function loadModel() {
   console.log("Model loaded successfully!");
 }
 
+const gridGapVH = .3;
+const gridSizeVH = 1.2;
+
+
+function vhToPixels(vh: number) : number {
+  const height = Math.max(
+    document.documentElement.clientHeight || 0,
+    window.innerHeight || 0
+  );
+  return Math.max(Math.floor((vh*height)/100), 1);
+}
+
+
 loadModel();
 
 interface GridProps {
@@ -59,8 +72,14 @@ const Grid: React.FC<GridProps> = ({
   onGridChange,
 }) => {
   const [predictedLabel, setPredictedLabel] = useState("");
-
-  let brushSize = 3;
+  const [gridSize, setGridSize] = useState<number>(vhToPixels(gridSizeVH));
+  
+  const handleResize = () => {
+    console.time('Handle Resize');
+    setGridSize(vhToPixels(gridSizeVH));
+    console.timeEnd('Handle Resize');
+  };
+ let brushSize = 3;
 
   const divRef = useRef<HTMLDivElement>(null);
 
@@ -111,6 +130,7 @@ const Grid: React.FC<GridProps> = ({
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (isMouseDown && divRef.current) {
+        console.time('Mouse Move Detected')
         const { width, height, left, top } =
           divRef.current.getBoundingClientRect();
         const { clientX, clientY } = event;
@@ -144,6 +164,7 @@ const Grid: React.FC<GridProps> = ({
         }
 
         onGridChange(updatedGridState);
+        console.timeEnd('Mouse Move Detected')
       }
     };
 
@@ -206,17 +227,34 @@ const Grid: React.FC<GridProps> = ({
     };
   }, [isMouseDown]);
 
+
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const str = String(gridSize) + 'px ';
+
+
   return (
     <div
       className="grid-container"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       ref={divRef}
+      style={{
+        gridTemplateColumns:   str.repeat(64),
+        //columnGap: `${gridGap}px`, 
+        width: `${gridSize*64}px`,
+        height: `${gridSize*64}px`}}
     >
       {gridState.map((row, x) => (
         <div key={x} className="grid-column">
           {row.map((cell: boolean, y) => (
-            <GridCell isActive={cell} key={String(x) + String(y)} />
+            <GridCell gridSize={gridSize} isActive={cell} key={String(x) + String(y)}/>
           ))}
         </div>
       ))}
