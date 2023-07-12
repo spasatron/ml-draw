@@ -3,6 +3,7 @@ import GridCell from "./GridCell";
 import "./Grid.css";
 
 import * as tf from "@tensorflow/tfjs";
+import { render } from "react-dom";
 
 const labelMapping: Record<number, string> = {
   0: "airplane",
@@ -73,7 +74,10 @@ const Grid: React.FC<GridProps> = ({
 }) => {
   const [predictedLabel, setPredictedLabel] = useState("");
   const [gridSize, setGridSize] = useState<number>(vhToPixels(gridSizeVH));
-  
+  const renderTimes = useRef(1);
+  const previousPoint = useRef<{x: number; y: number;} | null>(null);
+
+
   const handleResize = () => {
     console.time('Handle Resize');
     setGridSize(vhToPixels(gridSizeVH));
@@ -95,6 +99,53 @@ const Grid: React.FC<GridProps> = ({
     setIsMouseDown(false);
   };
 
+
+  function drawLineWithPoints(currentGridState: Uint8Array, point: {x: number; y: number}, prevPoint: {x: number; y: number} | null) : Uint8Array{
+    const brushRadius = Math.floor(brushSize / 2);
+
+    let points = [point];
+    if(prevPoint){
+      let distance = Math.max(Math.floor(Math.sqrt(Math.pow(point.x - prevPoint.x, 2) + Math.pow(point.y - prevPoint.y, 2))/2), 0);
+      console.log("Distance " + String(distance))
+      for(let i = 0; i <= distance; i++){
+        points.push({x: Math.floor(point.x + (distance-i)*(prevPoint.x - point.x)/distance), y: Math.floor(point.y + (distance-i)*(prevPoint.y - point.y)/distance)})
+      }
+    }
+    console.log(points);
+
+    for (const p of points){
+
+      const startGridX = p.x - brushRadius;
+      const endGridX = startGridX + brushSize;
+      const startGridY = p.y - brushRadius;
+      const endGridY = startGridY + brushSize;
+
+      let k = 0, n = 0;
+      for (
+        let i = Math.max(0, startGridX);
+        i < Math.min(endGridX, 64);
+        i++
+      ) {
+        for (
+          let j = Math.max(0, startGridY);
+          j < Math.min(endGridY, 64);
+          j++
+        ) {
+          k = j*8 + Math.floor(i/8);
+          n = i % 8;
+
+          currentGridState[k] = currentGridState[k] | (1 << 7 - n);
+        }
+      }
+    }
+
+
+    return currentGridState;
+
+  };
+
+
+
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (isMouseDown && divRef.current) {
@@ -106,33 +157,12 @@ const Grid: React.FC<GridProps> = ({
         //TODO change back to height once all components are rearanged
         const cellHeight = width / 64;
 
-        const brushRadius = Math.floor(brushSize / 2);
+        let updatedGridState = drawLineWithPoints(gridState,  {x: Math.floor((clientX - left) / cellWidth), y: Math.floor((clientY - top) / cellHeight)}, previousPoint.current);
 
-        const startGridX =
-          Math.floor((clientX - left) / cellWidth) - brushRadius;
-        const endGridX = startGridX + brushSize;
-        const startGridY =
-          Math.floor((clientY - top) / cellHeight) - brushRadius;
-        const endGridY = startGridY + brushSize;
-        let updatedGridState = gridState;
+        previousPoint.current = {x: Math.floor((clientX - left) / cellWidth), y: Math.floor((clientY - top) / cellHeight)}
+
         //console.log(gridState);
-        let k = 0, n = 0;
-        for (
-          let i = Math.max(0, startGridX);
-          i < Math.min(endGridX, 64);
-          i++
-        ) {
-          for (
-            let j = Math.max(0, startGridY);
-            j < Math.min(endGridY, 64);
-            j++
-          ) {
-            k = j*8 + Math.floor(i/8);
-            n = i % 8;
- 
-            updatedGridState[k] = updatedGridState[k] | (1 << 7 - n);
-          }
-        }
+       
         onGridChange(updatedGridState);
         console.timeEnd('Mouse Move Detected');
       }
@@ -140,6 +170,7 @@ const Grid: React.FC<GridProps> = ({
 
     const handleGlobalMouseUp = (event: MouseEvent) => {
       console.log("Global Mouse Up");
+      previousPoint.current = null;
       //On Global Mouse Up I will run the model
 
       if (!model) {
@@ -166,7 +197,7 @@ const Grid: React.FC<GridProps> = ({
           index++;
         }
       }
-      console.log(booleanArray)
+      //console.log(booleanArray)
       if (!isNotEmpty) {
         setPredictedLabel("");
         onPredictionChange("");
@@ -190,6 +221,7 @@ const Grid: React.FC<GridProps> = ({
     };
 
     document.addEventListener("mouseup", handleGlobalMouseUp);
+    document.addEventListener("mousedown", handleMouseDown)
 
     if (divRef.current) {
       divRef.current.addEventListener("mousemove", handleMouseMove);
@@ -216,7 +248,6 @@ const Grid: React.FC<GridProps> = ({
   return (
     <div
       className="grid-container"
-      onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       ref={divRef}
       style={{

@@ -1,7 +1,7 @@
 import "./Grid.css";
+import { memo } from 'react';
 
-
-function GridCell({ isActive, gridSize}: { isActive: boolean , gridSize: number}) {
+const GridCell = memo(function GridCell({ isActive, gridSize}: { isActive: boolean , gridSize: number}) {
   const style = {
     height: `${gridSize}px`,
     width: `${gridSize}px`
@@ -17,6 +17,6 @@ function GridCell({ isActive, gridSize}: { isActive: boolean , gridSize: number}
       style={style}
     ></div>
   );
-}
+});
 
 export default GridCell;
