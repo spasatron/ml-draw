@@ -73,13 +73,21 @@ body{
 .grid-container {
     cursor: crosshair;
     display: grid;
+    grid-template-columns: repeat(8, auto);
     /*grid-template-columns: repeat(64, 8px); /* Adjust the number of columns as needed */
     /*grid-template-columns: repeat(64, .95vh);*/
     user-select: none;
 }
 
+.grid-rows{
+    display: grid;
+    grid-template-columns: repeat(8, auto);
+}
+
+
 /* Grid cell */
 .grid-cell {
+    display: grid;
     /*width: 100%;
     aspect-ratio: 1/1;*/
     background-color:#a6e1fa;

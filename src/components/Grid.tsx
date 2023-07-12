@@ -62,8 +62,8 @@ loadModel();
 
 interface GridProps {
   onPredictionChange: (newPrediction: string) => void;
-  gridState: any[][];
-  onGridChange: (newGrid: any[][]) => void;
+  gridState: Uint8Array;
+  onGridChange: (newGrid: Uint8Array) => void;
 }
 
 const Grid: React.FC<GridProps> = ({
@@ -95,38 +95,6 @@ const Grid: React.FC<GridProps> = ({
     setIsMouseDown(false);
   };
 
-  function rotateN90(a: any[][]) {
-    var temp = new Array(a[0].length); // number of columns
-    var i = 0;
-
-    for (i = 0; i < temp.length; i++) {
-      temp[i] = [];
-    }
-
-    for (i = 0; i < a.length; i++) {
-      for (let j = 0; j < a[0].length; j++) {
-        temp[j][i] = a[i][a[i].length - 1 - j];
-      }
-    }
-
-    return temp;
-  }
-  // Function to rotate a 2D array clockwise
-  function rotateArrayClockwise(array: any[][]): any[][] {
-    const numRows = array.length;
-    const numCols = array[0].length;
-    let rotatedArray = [];
-
-    for (let col = numCols - 1; col >= 0; col--) {
-      let newRow = [];
-      for (let row = 0; row < numRows; row++) {
-        newRow.push(array[row][col]);
-      }
-      rotatedArray.push(newRow);
-    }
-
-    return rotatedArray;
-  }
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (isMouseDown && divRef.current) {
@@ -134,9 +102,9 @@ const Grid: React.FC<GridProps> = ({
         const { width, height, left, top } =
           divRef.current.getBoundingClientRect();
         const { clientX, clientY } = event;
-        const cellWidth = width / gridState.length;
+        const cellWidth = width / 64;
         //TODO change back to height once all components are rearanged
-        const cellHeight = width / gridState[0].length;
+        const cellHeight = width / 64;
 
         const brushRadius = Math.floor(brushSize / 2);
 
@@ -146,25 +114,27 @@ const Grid: React.FC<GridProps> = ({
         const startGridY =
           Math.floor((clientY - top) / cellHeight) - brushRadius;
         const endGridY = startGridY + brushSize;
-
-        const updatedGridState = [...gridState];
-
+        let updatedGridState = gridState;
+        //console.log(gridState);
+        let k = 0, n = 0;
         for (
           let i = Math.max(0, startGridX);
-          i < Math.min(endGridX, gridState.length);
+          i < Math.min(endGridX, 64);
           i++
         ) {
           for (
             let j = Math.max(0, startGridY);
-            j < Math.min(endGridY, gridState[0].length);
+            j < Math.min(endGridY, 64);
             j++
           ) {
-            updatedGridState[i][j] = true;
+            k = j*8 + Math.floor(i/8);
+            n = i % 8;
+ 
+            updatedGridState[k] = updatedGridState[k] | (1 << 7 - n);
           }
         }
-
         onGridChange(updatedGridState);
-        console.timeEnd('Mouse Move Detected')
+        console.timeEnd('Mouse Move Detected');
       }
     };
 
@@ -176,27 +146,33 @@ const Grid: React.FC<GridProps> = ({
         console.log("Model not loaded yet. Please wait...");
         return;
       }
-      const boolArray = rotateN90(
-        rotateN90(rotateN90(gridState))
-      ); /* your 64x64 boolean array */
-      const uint8Array2D = [];
 
-      var isNotEmpty = false;
-
+      var isNotEmpty = true;
+      // Create a 64x64 boolean array
+      const booleanArray: number[][] = [];
       for (let i = 0; i < 64; i++) {
-        const row = new Uint8Array(64);
-        for (let j = 0; j < 64; j++) {
-          row[j] = boolArray[i][j] ? 255 : 0;
-          isNotEmpty = isNotEmpty || boolArray[i][j];
-        }
-        uint8Array2D.push(row);
+        booleanArray[i] = [];
       }
+
+      // Convert Uint8Array to boolean array
+      let index = 0;
+      for (let y = 0; y < 64; y++) {
+        for (let x = 0; x < 64; x++) {
+          const byteIndex = Math.floor(index / 8);
+          const bitOffset = index % 8;
+          const byteValue = gridState[byteIndex];
+          const booleanValue = (byteValue & (1 << (7 - bitOffset))) !== 0;
+          booleanArray[y][x] = booleanValue ? 255 : 0;
+          index++;
+        }
+      }
+      console.log(booleanArray)
       if (!isNotEmpty) {
         setPredictedLabel("");
         onPredictionChange("");
       } else {
         let tensor = tf
-          .tensor2d(uint8Array2D, [64, 64])
+          .tensor2d(booleanArray, [64, 64])
           .reshape([1, 64, 64, 1]) as tf.Tensor4D;
         let resizedTensor = tf.image.resizeBilinear(tensor, [28, 28]);
 
@@ -237,8 +213,6 @@ const Grid: React.FC<GridProps> = ({
   }, []);
 
   const str = String(gridSize) + 'px ';
-
-
   return (
     <div
       className="grid-container"
@@ -246,17 +220,31 @@ const Grid: React.FC<GridProps> = ({
       onMouseUp={handleMouseUp}
       ref={divRef}
       style={{
-        gridTemplateColumns:   str.repeat(64),
+        gridTemplateRows:   str.repeat(64),
         //columnGap: `${gridGap}px`, 
         width: `${gridSize*64}px`,
         height: `${gridSize*64}px`}}
     >
-      {gridState.map((row, x) => (
-        <div key={x} className="grid-column">
-          {row.map((cell: boolean, y) => (
-            <GridCell gridSize={gridSize} isActive={cell} key={String(x) + String(y)}/>
-          ))}
+      {Array.from(gridState).map((row, x) => (
+
+        <div key={x} className="grid-rows">
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 7))} key={String(x) + String(0)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 6))} key={String(x) + String(1)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 5))} key={String(x) + String(2)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 4))} key={String(x) + String(3)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 3))} key={String(x) + String(4)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 2))} key={String(x) + String(5)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 1))} key={String(x) + String(6)}/>
+
+          <GridCell gridSize={gridSize} isActive={Boolean(row & (1 << 0))} key={String(x) + String(7)}/>
         </div>
+
       ))}
 
       {/* <div className="prediction-text">

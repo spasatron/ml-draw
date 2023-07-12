@@ -2,14 +2,16 @@ import Grid from "./Grid";
 import React, { useState, useRef, useEffect } from "react";
 import PredictionBox from "./PredictionBox";
 import "./Grid.css";
+
+
 function GridWrapper() {
   const [predictionText, setPredictionText] = useState("");
-  const [gridState, setGridState] = useState(
-    Array.from({ length: 64 }, () => Array(64).fill(false))
-  );
+  const [gridState, setGridState] = useState(new Uint8Array(512));
 
-  const handleGridStateChange = (newGridState: any[][]) => {
-    setGridState(newGridState);
+
+  const handleGridStateChange = (newGridState: Uint8Array) => {
+    console.log("setting new state");
+    setGridState(newGridState.slice());
   };
 
   const predictionStateUpdate = (newValue: string) => {
@@ -23,7 +25,7 @@ function GridWrapper() {
         <Grid
           onPredictionChange={predictionStateUpdate}
           gridState={gridState}
-          onGridChange={setGridState}
+          onGridChange={handleGridStateChange}
         />
         <PredictionBox
           prediction={predictionText}
