@@ -2,6 +2,9 @@
 import os
 import struct
 from struct import unpack
+import traceback
+import logging
+
 
 import numpy as np
 import cairocffi as cairo
@@ -9,15 +12,21 @@ import tensorflow as tf
 # pylint: disable-next=import-error
 from tensorflow.keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
+from inception_module import InceptionModule
+from PIL import Image
 
 
 BIN_DIR_FILE_LOC = "./binary_images"
-NUM_CLASSES = 28
-EPOCHS = 10
-EPOCH_DATA_SIZE = 500_000
-
-
+NUM_CLASSES = 121
+EPOCHS = 20
+INDIVIDUAL_EXAMPLE_SIZE = 15_000
+VALIDATION_PERCENT = .1
+BATCH_SIZE = 64
+LABEL_MAPPING = {}
+L = logging.getLogger(__name__)
 ## ------ Helper Functions ------- ##
+
+VALIDATION_SIZE = int(VALIDATION_PERCENT*NUM_CLASSES*INDIVIDUAL_EXAMPLE_SIZE)
 
 
 def unpack_drawing(file_handle):
@@ -44,17 +53,45 @@ def unpack_drawing(file_handle):
     }
 
 
+def extract_label_from_filename(filename):
+    """ Returns the filename mapped to a label"""
+    label = os.path.splitext(os.path.basename(filename))[0]
+    return LABEL_MAPPING.get(label, -1)
+
+
 def unpack_drawings(filename):
     """ Takes in .bin file and returns simplified representation of image in a dictionary"""
+
+    label = extract_label_from_filename(str(filename))
     with open(filename, 'rb') as file_handle:
-        while True:
+        num_img = 0
+        while True and (num_img < INDIVIDUAL_EXAMPLE_SIZE):
             try:
-                yield unpack_drawing(file_handle)
+                drawing = unpack_drawing(file_handle)
+
+                image = drawing['image']
+
+                raster = vector_to_raster([image])
+
+                img_data = np.reshape(raster[0], (64, 64))
+
+                # img = Image.fromarray(img_data, 'L')
+                # img.save(f"{label}.png")
+                if drawing['recognized']:
+                    yield (img_data, label)
+                    num_img += 1
             except struct.error:
                 break
+            # pylint: disable-next=broad-except
+            except Exception:
+                print("Other Error", traceback.format_exc())
+
+                break
+        # print(f"End of File {filename} with {num_img} uses")
+        return
 
 
-def vector_to_raster(vector_images, side=28, line_diameter=16, padding=16, bg_color=(0, 0, 0), fg_color=(1, 1, 1)):
+def vector_to_raster(vector_images, side=64, line_diameter=12, padding=26, bg_color=(0, 0, 0), fg_color=(1, 1, 1)):
     """ Padding and line_diameter are relative to the original 256x256 image."""
 
     original_side = 256.
@@ -101,19 +138,6 @@ def vector_to_raster(vector_images, side=28, line_diameter=16, padding=16, bg_co
     return raster_images
 
 
-def extract_label_from_filename(filename):
-    """ Returns the filename mapped to a label"""
-    label = os.path.splitext(os.path.basename(filename))[0]
-
-    label_mapping = {'airplane': 0, 'apple': 1, 'axe': 2, 'backpack': 3, 'banana': 4, 'bee': 5,
-                     'bicycle': 6, 'car': 7, 'chair': 8, 'crown': 9, 'donut': 10,
-                     'duck': 11, 'elephant': 12, 'eye': 13, 'feather': 14, 'flower': 15,
-                     'guitar': 16, 'hamburger': 17, 'knife': 18, 'mushroom': 19, 'octopus': 20,
-                     'pants': 21, 'rainbow': 22, 'shark': 23, 'snake': 24, 'sun': 25,
-                     'television': 26, 'tree': 27}
-    return label_mapping.get(label, -1)
-
-
 def parse_bin_file(filename):
     """ Returns List of TensorFlow Examples from one .bin image file"""
     examples = []
@@ -125,51 +149,78 @@ def parse_bin_file(filename):
 
         raster = vector_to_raster([image])
 
-        img_data = np.reshape(raster[0], (28, 28))
+        img_data = np.reshape(raster[0], (64, 64))
+
+        # img = Image.fromarray(img_data, 'L')
+        # img.save('my.png')
+
         examples.append((img_data, label))
     return examples
 
 
+def create_tf_dataset(files, num_classes, shuffle_buffer_size=100_000, seed=42, batch_size=64, validation_size=100_000):
+    """ Create Function Method"""
+    filepath_dataset = tf.data.Dataset.list_files(files, seed=seed)
+
+    dataset = filepath_dataset.interleave(
+        lambda filepath: tf.data.Dataset.from_generator(
+            unpack_drawings, args=(filepath, ),
+            output_signature=(
+                tf.TensorSpec(shape=(64, 64), dtype=tf.uint8),
+                tf.TensorSpec(shape=(), dtype=tf.int64)
+            )
+        ),
+        cycle_length=num_classes,
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+
+    v_data = dataset.take(validation_size)
+
+    dataset = dataset.skip(validation_size).shuffle(
+        shuffle_buffer_size, seed=seed)
+
+    return dataset.batch(batch_size).prefetch(1), v_data.batch(batch_size).cache()
+
+
 if __name__ == "__main__":
+
+    logging.basicConfig(level=logging.INFO)
 
     bin_files = [os.path.join(BIN_DIR_FILE_LOC, file) for file in os.listdir(
         BIN_DIR_FILE_LOC) if file.endswith('.bin')]
-
-    dataset = tf.data.Dataset.from_generator(
-        lambda: (example for file in bin_files for example in parse_bin_file(file)),
-        output_signature=(
-            tf.TensorSpec(shape=(28, 28), dtype=tf.uint8),
-            tf.TensorSpec(shape=(), dtype=tf.int64)
-        )
-    )
+    LABEL_MAPPING = dict(zip([os.path.splitext(
+        os.path.basename(filename))[0] for filename in bin_files], range(NUM_CLASSES)))
 
     # Shuffle the dataset - Each bin file contains around 150,000 images with around 35 times
-    shuffled_dataset = dataset.shuffle(
-        buffer_size=150_000*35, reshuffle_each_iteration=True)
+    train_dataset, validation_dataset = create_tf_dataset(
+        bin_files, NUM_CLASSES, shuffle_buffer_size=int(NUM_CLASSES*INDIVIDUAL_EXAMPLE_SIZE) + 1, batch_size=BATCH_SIZE, validation_size=VALIDATION_SIZE)
 
-    random_sample = shuffled_dataset.take(EPOCH_DATA_SIZE)
-
-    # shuffled_dataset = shuffled_dataset.batch(64, drop_remainder=True)
-
-    VALIDATION_SIZE = int(.2 * EPOCH_DATA_SIZE)
-
-    train_dataset = random_sample.skip(VALIDATION_SIZE)
-    validation_dataset = random_sample.take(VALIDATION_SIZE)
-
-    train_dataset = train_dataset.batch(64, drop_remainder=True)
-    validation_dataset = validation_dataset.batch(64, drop_remainder=True)
+    data_augmentation = tf.keras.Sequential(
+        [
+            tf.keras.layers.RandomFlip(
+                "horizontal",
+                input_shape=(64, 64, 1)
+            ),
+            tf.keras.layers.RandomRotation(0.05),
+            # tf.keras.layers.RandomZoom(0.1),
+        ]
+    )
 
     model = tf.keras.Sequential([
-        # data_augmentation,
-        tf.keras.layers.Rescaling(1./255, input_shape=(28, 28, 1)),
-        tf.keras.layers.Conv2D(28, 2, padding='same', activation='relu'),
+        tf.keras.layers.Rescaling(1./255, input_shape=(64, 64, 1)),
+        data_augmentation,
+        tf.keras.layers.Conv2D(128, 5, padding='same'),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(14, 2, padding='same', activation='relu'),
+        InceptionModule(256, 128, 64, 32, 16, 16),
         tf.keras.layers.MaxPooling2D(),
-        tf.keras.layers.Conv2D(10, 2, padding='same', activation='relu'),
-        # tf.keras.layers.MaxPooling2D(),
+        InceptionModule(512, 256, 128, 64, 32, 32),
+        tf.keras.layers.MaxPooling2D(),
+        InceptionModule(1024, 512, 256, 128, 64, 64),
+        tf.keras.layers.MaxPooling2D(),
+        InceptionModule(2048, 1024, 512, 256, 128, 128),
+        tf.keras.layers.GlobalAveragePooling2D(),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(384, activation='relu'),
+        tf.keras.layers.Dropout(.4),
         tf.keras.layers.Dense(NUM_CLASSES)
     ])
 
@@ -180,7 +231,7 @@ if __name__ == "__main__":
         metrics=['accuracy'])
     model.summary()
 
-    CHECKPOINT_PATH = "./model_{epoch}.h5"
+    CHECKPOINT_PATH = ".inception/inception_{epoch}.h5"
 
     checkpoint_callback = ModelCheckpoint(
         filepath=CHECKPOINT_PATH,
@@ -216,8 +267,11 @@ if __name__ == "__main__":
     plt.plot(epochs_range, loss, label='Training Loss')
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
-    plt.savefig('model_train.png', dpi=400)
+    plt.title('Training and Validation Loss (Inception)')
+    plt.savefig('incepetion.png', dpi=400)
+    # Save Model
+    model.save('inception_done.keras')
+
     # Convert the model.
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     tflite_model = converter.convert()

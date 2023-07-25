@@ -7,7 +7,7 @@ function is_vowel(str: string) {
 
 interface PredictionBoxProps {
   prediction: string;
-  gridState: Uint8Array
+  gridState: Uint8Array;
   onGridChange: (newGrid: Uint8Array) => void;
   onPredictionChange: (newString: string) => void;
 }
@@ -36,10 +36,7 @@ const PredictionBox: React.FC<PredictionBoxProps> = ({
   }
   return (
     <div className="prediction-wrapper">
-      <div className="prediction-box prediction-text">
-        I think you are drawing {is_vowel(prediction[0]) ? "an " : "a "}{" "}
-        {prediction}
-      </div>
+      <div className="prediction-box prediction-text">{prediction}</div>
       <button className="reset-button" onClick={clearGrid}>
         Reset Drawing
       </button>

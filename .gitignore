@@ -1,6 +1,9 @@
 python/sketchrnn_apple.npz
 python/binary_images
 python/binary_images/*
+python/.inception/*
 python/*.h5
 python/*.tflite
 node_modules\*
+python/*.keras
+web-server/*.h5
