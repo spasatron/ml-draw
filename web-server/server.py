@@ -160,7 +160,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",  # Add your frontend URL here
-    "https://spasatron.github.io/ml-draw/"
+    "http://ml-draw.spasangelov.com"
 ]
 
 # Set up CORS middleware

@@ -36,7 +36,7 @@ const labelMapping: Record<number, string> = {
   27: "tree",
 };
 
-const modelURL = "http://18.189.189.217//prediction/";
+const modelURL = "http://18.189.189.217/prediction/";
 
 let model: tf.LayersModel;
 
