@@ -39,7 +39,6 @@ function drawLineWithPoints(
     }
   }
 
-
   for (const p of points) {
     const startGridX = p.x - brushRadius;
     const endGridX = startGridX + brushSize;
@@ -60,10 +59,6 @@ function drawLineWithPoints(
 
   return currentGridState;
 }
-
-
-
-
 
 function touchHandler(event: TouchEvent) {
   var touches = event.changedTouches,
@@ -135,10 +130,8 @@ interface GridProps {
 const Grid: React.FC<GridProps> = ({
   onPredictionChange,
   onClearedGrid,
-  clearGrid
+  clearGrid,
 }) => {
-
-
   const gridState = useRef<Uint8Array>(new Uint8Array(512));
   const [gridSize, setGridSize] = useState<number>(vhToPixels(gridSizeVH));
   const [gridHasUpdated, setGridHasUpdated] = useState(0);
@@ -149,19 +142,15 @@ const Grid: React.FC<GridProps> = ({
 
   const isMouseDown = useRef<Boolean>(false);
 
-
   const handleMouseDown = () => {
-
     isMouseDown.current = true;
   };
 
   const handleMouseUp = () => {
-
     isMouseDown.current = false;
   };
 
   const handleResize = () => {
-
     //Fullscreens can take advantage of this
     if (window.innerWidth >= 720) {
       setGridSize(Math.min(vhToPixels(gridSizeVH), vwToPixels(gridSizeVH)));
@@ -171,14 +160,12 @@ const Grid: React.FC<GridProps> = ({
       setGridSize(Math.floor(window.innerWidth / 68));
     }
     document.body.style.overflow = "hidden";
-
   };
- 
+
   async function makeAPIPrediction(
     url: string,
     payload: { binaryData: string }
   ) {
-
     try {
       const response = await fetch(url, {
         method: "POST",
@@ -195,16 +182,14 @@ const Grid: React.FC<GridProps> = ({
       const base64String = btoa(
         String.fromCharCode.apply(null, Array.from(gridState.current))
       );
-  
-      onPredictionChange(apiPrediction["Response"]);
 
+      onPredictionChange(apiPrediction["Response"]);
     } catch (error) {
       console.log("No Backend Response");
     }
-
   }
   function delayedAPICall() {
-
+    console.log("API Request");
     //Check If Anything is Drawn
     const base64String = btoa(
       String.fromCharCode.apply(null, Array.from(gridState.current))
@@ -220,7 +205,6 @@ const Grid: React.FC<GridProps> = ({
         binaryData: base64String,
       });
     }
-
   }
   const handleMouseMove = (event: MouseEvent) => {
     if (isMouseDown.current && divRef.current) {
@@ -245,21 +229,19 @@ const Grid: React.FC<GridProps> = ({
         y: Math.floor((clientY - top) / cellHeight),
       };
 
-
       gridState.current = updatedGridState.slice();
-      setGridHasUpdated(prevState => prevState + 1);
+      setGridHasUpdated((prevState) => prevState + 1);
     }
   };
 
   const handleGlobalMouseUp = (event: MouseEvent) => {
     previousPoint.current = null;
+    //delayedAPICall();
     clearTimeout(timeOutID);
-    timeOutID = setTimeout(delayedAPICall, 1000);
+    timeOutID = setTimeout(delayedAPICall, 400);
     isMouseDown.current = false;
   };
   useEffect(() => {
-
-
     document.addEventListener("mouseup", handleGlobalMouseUp);
     document.addEventListener("mousedown", handleMouseDown);
 
@@ -293,13 +275,13 @@ const Grid: React.FC<GridProps> = ({
   }, []);
 
   useEffect(() => {
-    if(clearGrid == true){
+    if (clearGrid == true) {
       let cleared_grid = new Uint8Array(512);
       gridState.current = cleared_grid.slice();
-      setGridHasUpdated(prevState => prevState + 1);
+      setGridHasUpdated((prevState) => prevState + 1);
       onClearedGrid();
     }
-  }, [clearGrid])
+  }, [clearGrid]);
 
   const str = String(gridSize) + "px ";
 
@@ -315,55 +297,55 @@ const Grid: React.FC<GridProps> = ({
       }}
     >
       {Array.from(gridState.current).map((row_val, idx) => (
-         <div key={idx} className="grid-rows">
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 7))}
-           key={String(idx) + String(0)}
-         />
+        <div key={idx} className="grid-rows">
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 7))}
+            key={String(idx) + String(0)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 6))}
-           key={String(idx) + String(1)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 6))}
+            key={String(idx) + String(1)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 5))}
-           key={String(idx) + String(2)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 5))}
+            key={String(idx) + String(2)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 4))}
-           key={String(idx) + String(3)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 4))}
+            key={String(idx) + String(3)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 3))}
-           key={String(idx) + String(4)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 3))}
+            key={String(idx) + String(4)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 2))}
-           key={String(idx) + String(5)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 2))}
+            key={String(idx) + String(5)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 1))}
-           key={String(idx) + String(6)}
-         />
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 1))}
+            key={String(idx) + String(6)}
+          />
 
-         <GridCell
-           gridSize={gridSize}
-           isActive={!!(row_val & (1 << 0))}
-           key={String(idx) + String(7)}
-         />
-       </div>
+          <GridCell
+            gridSize={gridSize}
+            isActive={!!(row_val & (1 << 0))}
+            key={String(idx) + String(7)}
+          />
+        </div>
       ))}
     </div>
   );
