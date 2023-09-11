@@ -7,20 +7,17 @@ function is_vowel(str: string) {
 
 interface PredictionBoxProps {
   prediction: string;
-  gridState: Uint8Array;
-  onGridChange: (newGrid: Uint8Array) => void;
+  causeClearGrid: () => void;
   onPredictionChange: (newString: string) => void;
 }
 
 const PredictionBox: React.FC<PredictionBoxProps> = ({
   prediction,
-  gridState,
-  onGridChange,
+  causeClearGrid,
   onPredictionChange,
 }) => {
   function clearGrid() {
-    const updatedGridState = new Uint8Array(512);
-    onGridChange(updatedGridState);
+    causeClearGrid();
     onPredictionChange("");
   }
 

@@ -5,14 +5,16 @@ import "./Grid.css";
 
 function GridWrapper() {
   const [predictionText, setPredictionText] = useState("");
-  const [gridState, setGridState] = useState(new Uint8Array(512));
+  const [clearGrid, setClearGrid] = useState(false);
 
-  const handleGridStateChange = (newGridState: Uint8Array) => {
-    console.log("setting new state");
 
-    setGridState(newGridState.slice());
-  };
+  const causeClearGrid = () => {
+    setClearGrid(true);
+  }
 
+  const gridCleared = () => {
+    setClearGrid(false);
+  }
   const predictionStateUpdate = (newValue: string) => {
     setPredictionText(newValue);
   };
@@ -22,13 +24,12 @@ function GridWrapper() {
       <div className="grid-component-wrapper">
         <Grid
           onPredictionChange={predictionStateUpdate}
-          gridState={gridState}
-          onGridChange={handleGridStateChange}
+          onClearedGrid={gridCleared}
+          clearGrid={clearGrid}
         />
         <PredictionBox
           prediction={predictionText}
-          gridState={gridState}
-          onGridChange={setGridState}
+          causeClearGrid={causeClearGrid}
           onPredictionChange={predictionStateUpdate}
         />
       </div>

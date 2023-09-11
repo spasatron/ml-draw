@@ -1,13 +1,12 @@
 import "./Grid.css";
 import { memo } from 'react';
 
-const GridCell = memo(function GridCell({ isActive, gridSize}: { isActive: boolean , gridSize: number}) {
+const GridCell = memo(function GridCell({ gridSize, isActive}: {gridSize: number, isActive: boolean}) {
   const style = {
     height: `${gridSize}px`,
     width: `${gridSize}px`
     //borderRadius: borderStyle
   };
-
 
   return (
     <div
