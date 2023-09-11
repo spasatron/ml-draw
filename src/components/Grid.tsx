@@ -238,7 +238,7 @@ const Grid: React.FC<GridProps> = ({
     previousPoint.current = null;
     //delayedAPICall();
     clearTimeout(timeOutID);
-    timeOutID = setTimeout(delayedAPICall, 400);
+    timeOutID = setTimeout(delayedAPICall, 1000);
     isMouseDown.current = false;
   };
   useEffect(() => {
